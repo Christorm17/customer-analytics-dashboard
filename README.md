@@ -1,137 +1,174 @@
-# Customer Analytics Dashboard
+Operational customer data framework built to support Customer Success lifecycle monitoring, segmentation governance, and revenue risk prioritization.
 
-**SQL-based customer segmentation and risk analysis project using Power BI**
+🎯 Business Context
 
-## 📊 Project Overview
+Customer Success teams rely on accurate and structured customer data to:
 
-This project analyzes 18,000+ customer records to identify at-risk customers, segment the customer base, and provide actionable insights for Customer Success Operations. Built using SQL Server and Power BI.
+Identify churn risk early
 
-## 🎯 Business Problem
+Prioritize outreach based on revenue exposure
 
-Customer Success teams need to:
-- Identify high-value customers at risk of churning
-- Segment customers for targeted campaigns
-- Monitor customer health metrics in real-time
-- Prioritize outreach based on revenue impact
+Segment accounts for lifecycle campaigns
 
-## 💡 Solution
+Maintain reliable reporting for leadership
 
-Built a 3-page interactive Power BI dashboard connected to SQL Server that:
-1. Segments 18,482 customers into VIP (10%), Regular (22%), and New (67%) tiers
-2. Identifies 7,523 at-risk customers representing $12.3M in revenue
-3. Tracks customer health metrics (active rate, retention, recency)
-4. Provides prioritized list of at-risk VIP customers for immediate action
+This project mirrors a CS Data Operations environment where data quality, validation, and reporting stability directly impact operational execution.
 
-## 🛠️ Technical Stack
+💼 Core Deliverables
+1️⃣ Data Quality & Governance
 
-- **Database:** SQL Server
-- **ETL/Analysis:** T-SQL (CTEs, Window Functions, Stored Procedures)
-- **Visualization:** Power BI Desktop
-- **Key Techniques:** Customer segmentation, cohort analysis, risk scoring
+Identified and corrected flawed customer segmentation logic
 
-## 📂 Repository Structure
-```
-├── sql-queries/          # SQL scripts for data exploration and VIEW creation
-│   ├── 00-11_*.sql      # Exploratory Data Analysis queries
-│   ├── 12_report_customers.sql    # Main customer analytics VIEW
-│   ├── 13_report_products.sql     # Product analytics VIEW
-│   └── 14_segmentation_fix_notes.sql  # Documentation of bug fixes
-├── dashboard/           # Power BI dashboard file
-│   └── CustomerAnalyticsDashboard.pbix
-├── screenshots/         # Dashboard preview images
-│   ├── page1_overview.png
-│   ├── page2_deep_dive.png
-│   └── page3_risk_analysis.png
-└── README.md
-```
+Implemented validation rules (NULL handling, outlier checks, distribution validation)
 
-## 📊 Dashboard Pages
+Applied consistent status definitions and tier standards
 
-### Page 1: Customer Analytics Overview
-![Dashboard Overview](screenshots/page1_overview.png)
+Structured SQL views as controlled reporting layers
 
-**Key Metrics:**
-- Total Customers: 18,482
-- Active Customers: 6,704 (36.3%)
-- VIP Customers: 1,883 (10.2%)
-- Total Revenue: $29.4M
+Result: Reliable, refresh-ready dataset suitable for downstream CRM or BI consumption.
 
-**Insights:**
-- Customer segmentation by tier (VIP/Regular/New)
-- Customer health status distribution
-- Revenue contribution by segment
-- Average monthly spend analysis
+2️⃣ Customer Lifecycle Monitoring
 
-### Page 2: Customer Deep Dive
-![Deep Dive Analysis](screenshots/page2_deep_dive.png)
+Defined rule-based lifecycle states using recency logic:
 
-**Features:**
-- Top 20 customers by revenue with conditional formatting
-- Recency distribution (months since last order)
-- Order frequency distribution by segment
-- Customer status breakdown (Active/At Risk/Inactive)
+Active (≤ 3 months)
 
-### Page 3: Customer Risk Analysis
-![Risk Analysis](screenshots/page3_risk_analysis.png)
+At Risk (4–8 months)
 
-**Risk Metrics:**
-- At-Risk Customers: 7,523
-- Inactive Customers: 4,255
-- At-Risk Revenue: $12.3M
-- Potential Lost Revenue: $6.6M
+Inactive (9+ months)
 
-**Features:**
-- Prioritized list of at-risk VIP customers
-- Risk distribution by customer segment
+Built health metrics across 18,482 customers, enabling operational visibility into engagement and revenue exposure.
 
-## 🔍 Technical Highlights
+Active rate observed: 36.3%, indicating significant retention opportunity.
 
-### Customer Segmentation Logic
+3️⃣ Revenue Risk Identification
 
-Fixed threshold segmentation didn't match real data distribution:
-- Original: VIP required 12+ months tenure + $5K+ sales
-- Problem: 95% of customers had <12 months tenure → nearly all classified as "New"
+Flagged 7,523 at-risk accounts
 
-**Solution:** Recalibrated using data percentiles:
-```sql
+Identified $12.3M in revenue exposure
+
+Prioritized 352 high-value VIP accounts for immediate intervention
+
+Developed ranked intervention logic combining customer value and recency score to simulate CS outreach queue management.
+
+4️⃣ Segmentation Recalibration (Production-Level Debugging)
+
+Issue Identified:
+Original segmentation logic relied on static tenure thresholds, misclassifying 95% of customers into a single tier.
+
+Root Cause:
+Business rules were inconsistent with actual data distribution (average tenure significantly lower than assumed).
+
+Solution:
+Rebuilt segmentation using percentile-based revenue thresholds and realistic tenure cutoffs.
+
+Validation Performed:
+
+Distribution balance checks
+
+Average revenue per segment comparison
+
+Monthly revenue consistency analysis
+
+Final distribution:
+
+VIP: 10.2%
+
+Regular: 22.3%
+
+New: 67.5%
+
+Segmentation now supports differentiated Customer Success playbooks.
+
+🛠 Technical Implementation
+SQL (Operational-Level)
+
+CTE-based modular transformations
+
+Window functions (ROW_NUMBER, NTILE, RANK, running totals)
+
+Percentile calculations for segmentation
+
+Validation queries for distribution control
+
+Production-ready VIEW creation for BI integration
+
+Example lifecycle logic:
+
 CASE 
-    WHEN total_sales >= 4826 AND lifespan >= 4 THEN 'VIP'    -- P90 sales, realistic tenure
-    WHEN total_sales <  4826 AND lifespan >= 4 THEN 'Regular'
-    ELSE 'New'
+    WHEN DATEDIFF(month, last_order_date, MAX(last_order_date) OVER()) <= 3 
+        THEN 'Active'
+    WHEN DATEDIFF(month, last_order_date, MAX(last_order_date) OVER()) BETWEEN 4 AND 8 
+        THEN 'At Risk'
+    ELSE 'Inactive'
 END
-```
 
-**Result:**
-- VIP: 10.2% (realistic top tier)
-- Regular: 22.3% (established base)
-- New: 67.5% (recent customers)
+Power BI (Operational Dashboarding)
 
-### Key SQL Techniques Used
+Developed a 3-page dashboard designed for:
 
-- **Window Functions:** Running totals, ranking, percentile calculations
-- **CTEs:** Modular query structure for complex transformations
-- **Data Quality:** NULL handling, duplicate detection, outlier management
-- **Business Logic:** Customer lifecycle stages, risk scoring, cohort definitions
+Executive health overview
 
-## 📈 Key Insights
+Analyst deep-dive segmentation
 
-1. **Revenue Concentration:** VIP customers (10%) generate 48% of total revenue
-2. **Churn Risk:** 7,523 customers at risk representing $12.3M in revenue
-3. **Engagement Gap:** 67% of customer base are "New" with single purchases
-4. **VIP Health:** 693 VIP customers (37% of VIPs) are Active vs 352 At Risk
+Daily at-risk intervention queue
 
-## 🚀 Skills Demonstrated
+Features:
 
-- **SQL:** Complex queries, VIEW creation, data transformations, window functions
-- **Data Analysis:** Customer segmentation, cohort analysis, risk identification
-- **Data Visualization:** Multi-page dashboards, conditional formatting, interactivity
-- **Business Intelligence:** KPI definition, metric calculation, insight generation
-- **Problem Solving:** Identified and fixed segmentation logic bug using percentile analysis
+Conditional formatting for risk prioritization
 
-## 📞 Contact
+Segment-based filtering
 
-Christian Ivan De La Rosa Medina
-chrisseguro17@gmail.com
-https://www.linkedin.com/in/christiandelarosam/
+Revenue concentration analysis
 
-**Note:** This project was completed as part of a comprehensive SQL and Power BI customer-success-related project, with additional enhancements including recalibrated segmentation logic, risk analysis, and custom visualizations.
+Dynamic KPI calculations (DAX)
+
+🔄 Operational Readiness
+
+To reflect a Customer Success Data Operations environment:
+
+Applied naming conventions for reporting clarity
+
+Structured reusable SQL layers
+
+Validated metrics before dashboard publication
+
+Documented logic changes to ensure maintainability
+
+Project demonstrates ability to support recurring data refreshes and maintain reporting accuracy over time.
+
+📂 Repository Structure
+├── sql-queries/
+│   ├── report_customers.sql
+│   ├── report_products.sql
+│   └── segmentation_recalibration.sql
+├── dashboard/
+│   └── CustomerSuccessDashboard.pbix
+├── screenshots/
+└── README.md
+
+🚀 Competencies Demonstrated
+
+Data cleansing & normalization
+
+Segmentation governance
+
+Revenue risk modeling
+
+Reporting validation & QA
+
+Operational dashboard design
+
+SQL for production-ready data layers
+
+🎯 Role Alignment
+
+This project reflects the responsibilities of a Customer Success Data Operations Analyst:
+
+Ensuring data accuracy and completeness
+
+Supporting lifecycle campaigns with validated segmentation
+
+Identifying and prioritizing revenue risk
+
+Maintaining reliable reporting layers for operational teams
